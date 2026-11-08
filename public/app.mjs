@@ -1,13 +1,11 @@
 import { deriveKeys, chunkCount, CHUNK, encryptChunk, decryptChunk, encryptMeta, decryptMeta, b64enc, b64dec } from './crypto.mjs';
+import { clean, fmt, view, where } from './view.mjs';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, props) => Object.assign(document.createElement(tag), props);
 let session = null; // { key: non-extractable CryptoKey, token: login token }
 let files = []; // decrypted: { id, created, name, size, type, prefix, thumb, folder }
 let cwd = ''; // folder being shown: '' is the top level, 'Photos/2024' a subfolder
-
-// Folders are just a path in each file's encrypted meta: a folder exists while it holds a file.
-const clean = (path) => path.split('/').map((s) => s.trim()).filter(Boolean).join('/');
 
 // The session lives in IndexedDB: unlike localStorage it can hold the CryptoKey itself,
 // which stays non-extractable, so not even a script on this page can read the raw key out.
@@ -47,8 +45,6 @@ async function busy(text, fn) {
   setBusy(text);
   try { return await fn(); } finally { if (!--busyDepth) setBusy(''); }
 }
-const units = ['B', 'KB', 'MB', 'GB'];
-const fmt = (n) => { let i = 0; while (n >= 1024 && i < 3) { n /= 1024; i++; } return `${i ? n.toFixed(1) : n} ${units[i]}`; };
 
 function show(loggedIn) {
   $('login-form').hidden = loggedIn;
@@ -70,6 +66,7 @@ async function logout() {
   session = null;
   files = [];
   cwd = '';
+  $('search').value = '';
   $('preview').close();
   render(); // don't leave decrypted names or photos in the page
   await db('readwrite', (s) => s.delete('session'));
@@ -111,30 +108,30 @@ const fileRow = (f) => row(
     ? el('img', { className: 'thumb', src: f.thumb, alt: '' })
     : el('span', { className: 'thumb', textContent: (f.name.split('.').pop() || '').slice(0, 4).toUpperCase() }),
   f.name,
-  `${fmt(f.size)} · ${new Date(f.created).toLocaleDateString()}`,
+  [fmt(f.size), new Date(f.created).toLocaleDateString(), where(f, cwd)].filter(Boolean).join(' · '), // where: search hits in subfolders
   () => (f.type.startsWith('image/') ? preview(f) : download(f)).catch((e) => say(`Couldn't open ${f.name}: ${e.message}`)),
   el('button', { className: 'act', textContent: 'Move', ariaLabel: `Move ${f.name}`, onclick: () => move(f).catch((e) => say(`Move failed: ${e.message}`)) }),
   el('button', { className: 'act', textContent: '✕', ariaLabel: `Delete ${f.name}`, onclick: () => remove(f).catch((e) => say(`Delete failed: ${e.message}`)) }),
 );
 
+const folderRow = ([name, n]) => row(
+  el('span', { className: 'thumb folder', textContent: '📁' }),
+  name,
+  `${n} file${n === 1 ? '' : 's'}`,
+  () => go(clean(`${cwd}/${name}`)),
+);
+
+const emptyText = (query) => (query.trim() ? 'No matching files.' : cwd ? 'Empty folder: upload files here.' : 'No files yet.');
+
 function render() {
-  const prefix = cwd ? `${cwd}/` : '';
-  const sub = new Map(); // subfolder name -> number of files in it (at any depth)
-  for (const f of files) {
-    if (f.folder === cwd || !f.folder.startsWith(prefix)) continue;
-    const name = f.folder.slice(prefix.length).split('/')[0];
-    sub.set(name, (sub.get(name) ?? 0) + 1);
-  }
-  const parts = cwd ? cwd.split('/') : [];
+  const parts = cwd.split('/').filter(Boolean);
   $('crumbs').replaceChildren(...['All files', ...parts].map((label, i) =>
     el('button', { type: 'button', textContent: label, disabled: i === parts.length, onclick: () => go(parts.slice(0, i).join('/')) })));
-  const rows = [
-    ...[...sub].sort(([a], [b]) => a.localeCompare(b)).map(([name, n]) =>
-      row(el('span', { className: 'thumb folder', textContent: '📁' }), name, `${n} file${n === 1 ? '' : 's'}`, () => go(prefix + name))),
-    ...files.filter((f) => f.folder === cwd).map(fileRow),
-  ];
+  const query = $('search').value;
+  const shown = view(files, cwd, query);
+  const rows = [...shown.folders.map(folderRow), ...shown.files.map(fileRow)];
   $('list').replaceChildren(...rows);
-  if (session && !rows.length) $('list').textContent = cwd ? 'Empty folder: upload files here.' : 'No files yet.';
+  if (session && !rows.length) $('list').textContent = emptyText(query);
 }
 
 async function move(f) {
@@ -233,6 +230,18 @@ $('login-form').onsubmit = async (e) => {
   $('password').value = '';
 };
 $('logout').onclick = logout;
+$('search').oninput = render; // names are decrypted in the browser, so search never asks the server
+
+// Background: a per-device look, so localStorage (it may throw in private mode; the page just stays plain).
+// An unknown saved name matches no [data-bg] rule and no radio, so it falls back to plain by itself.
+function setBackground(name) {
+  document.documentElement.dataset.bg = name;
+  $('walls-form').elements.bg.value = name;
+  try { localStorage.setItem('background', name); } catch {}
+}
+try { setBackground(localStorage.getItem('background') ?? 'none'); } catch {}
+$('wallpaper').onclick = () => $('walls').showModal();
+$('walls-form').onchange = (e) => setBackground(e.target.value);
 $('new-folder').onclick = () => {
   const name = prompt('New folder name:');
   if (name && clean(name)) go(clean(`${cwd}/${name}`));

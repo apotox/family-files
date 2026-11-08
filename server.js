@@ -94,6 +94,7 @@ const STATIC = {
   '/': ['index.html', 'text/html; charset=utf-8'],
   '/app.mjs': ['app.mjs', 'text/javascript; charset=utf-8'],
   '/crypto.mjs': ['crypto.mjs', 'text/javascript; charset=utf-8'],
+  '/view.mjs': ['view.mjs', 'text/javascript; charset=utf-8'],
 };
 
 const filePath = (id, ext) => path.join(FILES, `${id}.${ext}`);

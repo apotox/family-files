@@ -9,7 +9,46 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'family-files-'));
 process.env.DATA_DIR = dir;
 const { server, setPassword, CHUNK, TAG } = require('./server');
 
+// Pure list logic (public/view.mjs): every edge case is a row.
+async function checkView() {
+  const v = await import('./public/view.mjs');
+  const files = [
+    { name: 'beach.jpg', folder: '' },
+    { name: 'Zeugnis.pdf', folder: 'Schule' },
+    { name: 'Café.png', folder: 'Photos/2024' },
+    { name: 'tree.jpg', folder: 'Photos/2024/Xmas' },
+    { name: 'old.jpg', folder: 'Photosx' },
+  ];
+  for (const [cwd, query, folders, names, why] of [
+    ['', '', [['Photos', 2], ['Photosx', 1], ['Schule', 1]], ['beach.jpg'], 'top level: subfolders count files at any depth'],
+    ['Photos', '', [['2024', 2]], [], 'folder holding only subfolders'],
+    ['Photos/2024', '', [['Xmas', 1]], ['Café.png'], 'nested folder'],
+    ['Nowhere', '', [], [], 'unknown folder is empty'],
+    ['', '   ', [['Photos', 2], ['Photosx', 1], ['Schule', 1]], ['beach.jpg'], 'blank query browses'],
+    ['', 'JPG', [], ['beach.jpg', 'tree.jpg', 'old.jpg'], 'search is case-insensitive and spans all depths'],
+    ['', 'cafe', [], ['Café.png'], 'search ignores accents'],
+    ['', '2024 tree', [], ['tree.jpg'], 'every word must match; folder names count'],
+    ['Photos', 'jpg', [], ['tree.jpg'], 'search stays under the current folder, not a same-prefix sibling'],
+    ['Photos', 'photos', [], [], 'only the path below the current folder is searched'],
+    ['', 'nothing', [], [], 'no match'],
+  ]) {
+    const shown = v.view(files, cwd, query);
+    assert.deepEqual([shown.folders, shown.files.map((f) => f.name)], [folders, names], why);
+  }
+  for (const [file, cwd, expected] of [
+    [files[0], '', ''],
+    [files[3], '', 'Photos/2024/Xmas'],
+    [files[3], 'Photos', '2024/Xmas'],
+    [files[2], 'Photos/2024', ''],
+  ]) assert.equal(v.where(file, cwd), expected, `where(${file.folder}, ${cwd})`);
+  for (const [bytes, text] of [[0, '0 B'], [1023, '1023 B'], [1024, '1.0 KB'], [1.5 * 2 ** 20, '1.5 MB'], [2 ** 40, '1024.0 GB']]) {
+    assert.equal(v.fmt(bytes), text);
+  }
+  for (const [path, expected] of [['', ''], [' / a // b / ', 'a/b'], ['Photos/2024', 'Photos/2024']]) assert.equal(v.clean(path), expected);
+}
+
 (async () => {
+  await checkView();
   const c = await import('./public/crypto.mjs');
   assert.deepEqual([c.CHUNK, c.TAG], [CHUNK, TAG], 'server and browser agree on chunk layout');
 
@@ -75,6 +114,7 @@ const { server, setPassword, CHUNK, TAG } = require('./server');
     assert.equal((await req(`/api/files/${id}/0`, { method: 'PUT', body: Buffer.alloc(CHUNK + TAG + 1) })).status, 413, 'oversized chunk rejected');
     await assert.rejects(setPassword('another password'), /files exist/, 'password change refused while files exist');
     assert.match(await (await fetch(base)).text(), /id="login-form"/, 'index page served');
+    for (const url of ['/app.mjs', '/crypto.mjs', '/view.mjs']) assert.equal((await fetch(base + url)).status, 200, `${url} served`);
     const d = await (await req('/api/disk')).json();
     assert.ok(d.used > 0 && d.free > 0, 'disk usage reported');
     assert.equal((await fetch(`${base}/api/disk`)).status, 401, 'disk usage needs the password');

@@ -18,6 +18,7 @@
   .pick { flex: 1; padding: 18px; text-align: center; border: 2px dashed var(--muted); border-radius: 10px; cursor: pointer; font-size: 1.1em; }
   .pick input { display: none; }
   #new-folder { padding: 0 14px; border-radius: 10px; }
+  #search { width: 100%; box-sizing: border-box; margin-top: 12px; padding: 10px 12px; font-size: 1em; border-radius: 10px; }
   #crumbs { margin: 16px 0 0; overflow-wrap: anywhere; }
   #crumbs button { background: none; border: 0; padding: 4px 0; color: var(--accent); cursor: pointer; }
   #crumbs button:disabled { color: var(--fg); font-weight: 600; cursor: default; }
@@ -53,10 +54,44 @@
   .spin { flex: none; width: 14px; height: 14px; border: 3px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   [inert] { opacity: .6; }
+
+  /* Wallpapers: each is a tint (--hue) plus a tile (--pattern, black on transparent) used as a mask, so the doodles
+     take the theme's text colour and work in dark mode. "none" is the identity: no tint, a mask that hides everything.
+     The same data-bg attribute themes the page (on <html>) and each swatch in the picker. */
+  :root, [data-bg=none] { --hue: var(--bg); --pattern: linear-gradient(transparent, transparent); --tile: 8px; }
+  [data-bg=dots] { --hue: #4a90d9; --tile: 22px;
+    --pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22'><circle cx='11' cy='11' r='2'/></svg>"); }
+  [data-bg=grid] { --hue: #3fa66b; --tile: 28px;
+    --pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><path d='M0 .5H28M.5 0V28' stroke='black' fill='none'/></svg>"); }
+  [data-bg=waves] { --hue: #1aa3a3; --tile: 40px 20px;
+    --pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='20'><path d='M0 10q10-8 20 0t20 0' fill='none' stroke='black' stroke-width='1.5'/></svg>"); }
+  [data-bg=doodles] { --hue: #e0607e; --tile: 110px;
+    --pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='110' height='110' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M22 34c-7-7-16-1-11 7l11 11 11-11c5-8-4-14-11-7z'/><path d='M78 10l4 8 8 1-6 6 2 8-8-4-8 4 2-8-6-6 8-1z'/><circle cx='80' cy='78' r='11'/><path d='M75 81q5 5 10 0M76 74v1M84 74v1'/><rect x='12' y='74' width='26' height='18' rx='4'/><circle cx='25' cy='83' r='5'/><path d='M18 74l3-4h8l3 4'/><path d='M50 52q4-6 8 0t8 0'/></svg>"); }
+  [data-bg=confetti] { --hue: #e8a33d; --tile: 64px;
+    --pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect x='8' y='10' width='8' height='3' rx='1' transform='rotate(30 12 11)'/><circle cx='42' cy='16' r='2.5'/><rect x='34' y='44' width='8' height='3' rx='1' transform='rotate(-40 38 45)'/><circle cx='12' cy='48' r='1.8'/><path d='M52 40l4 7h-8z'/><path d='M22 28l3 3-3 3-3-3z'/></svg>"); }
+
+  body, .swatch { background-color: color-mix(in srgb, var(--bg) 90%, var(--hue)); }
+  body::before, .swatch::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+    -webkit-mask: var(--pattern) 0 0 / var(--tile) repeat; mask: var(--pattern) 0 0 / var(--tile) repeat;
+  }
+  body::before { position: fixed; }
+  #list { background: var(--bg); border-radius: 12px; padding: 4px 12px; }
+  #walls { width: min(420px, 90vw); border: 0; border-radius: 16px; padding: 16px; background: var(--bg); color: var(--fg); }
+  #walls::backdrop { background: rgb(0 0 0 / .6); }
+  #walls h2 { margin: 0 0 12px; font-size: 1.1em; }
+  #walls fieldset { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border: 0; padding: 0; margin: 0 0 12px; }
+  .swatch { position: relative; isolation: isolate; height: 80px; border-radius: 10px; border: 2px solid var(--line);
+            display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: .85em; cursor: pointer; }
+  .swatch:has(:checked) { border-color: var(--accent); font-weight: 600; }
+  .swatch:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .swatch input { position: absolute; opacity: 0; }
+  #walls form > button { width: 100%; padding: 10px; }
 </style>
 </head>
 <body>
-<header><h1>Memories</h1><button id="logout" type="button" hidden>Log out</button></header>
+<header><h1>Memories</h1><span><button id="wallpaper" type="button">Background</button> <button id="logout" type="button" hidden>Log out</button></span></header>
 
 <form id="login-form" hidden>
   <label for="password">Family password</label>
@@ -70,6 +105,7 @@
     <label class="pick">Tap to upload files<input type="file" multiple id="pick"></label>
     <button id="new-folder" type="button">New folder</button>
   </div>
+  <input id="search" type="search" placeholder="Search names in this folder" aria-label="Search files" autocomplete="off">
   <nav id="crumbs" aria-label="Folder"></nav>
   <ul id="list"></ul>
 </section>
@@ -80,6 +116,22 @@
     <span id="preview-name"></span>
     <button id="preview-dl" type="button">Download</button>
     <button>Close</button>
+  </form>
+</dialog>
+
+<!-- Background picker: saved per device; to add one, add a [data-bg=...] rule above and a swatch here. -->
+<dialog id="walls" closedby="any">
+  <form method="dialog" id="walls-form">
+    <h2>Background</h2>
+    <fieldset aria-label="Background">
+      <label class="swatch" data-bg="none"><input type="radio" name="bg" value="none">Plain</label>
+      <label class="swatch" data-bg="dots"><input type="radio" name="bg" value="dots">Dots</label>
+      <label class="swatch" data-bg="grid"><input type="radio" name="bg" value="grid">Grid</label>
+      <label class="swatch" data-bg="waves"><input type="radio" name="bg" value="waves">Waves</label>
+      <label class="swatch" data-bg="doodles"><input type="radio" name="bg" value="doodles">Doodles</label>
+      <label class="swatch" data-bg="confetti"><input type="radio" name="bg" value="confetti">Confetti</label>
+    </fieldset>
+    <button>Done</button>
   </form>
 </dialog>
 
