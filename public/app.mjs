@@ -33,6 +33,20 @@ async function api(url, options = {}) {
 }
 
 const say = (text) => { $('msg').textContent = text; };
+
+// Spinner toast while something slow runs. The page is inert meanwhile, so a second tap can't start it twice.
+// Calls nest (move -> refresh): the toast hides when the outermost one finishes.
+let busyDepth = 0;
+const setBusy = (text) => {
+  $('busy-text').textContent = text;
+  $('busy').hidden = !text;
+  $('app').inert = $('login-form').inert = Boolean(text);
+};
+async function busy(text, fn) {
+  busyDepth++;
+  setBusy(text);
+  try { return await fn(); } finally { if (!--busyDepth) setBusy(''); }
+}
 const units = ['B', 'KB', 'MB', 'GB'];
 const fmt = (n) => { let i = 0; while (n >= 1024 && i < 3) { n /= 1024; i++; } return `${i ? n.toFixed(1) : n} ${units[i]}`; };
 
@@ -42,16 +56,15 @@ function show(loggedIn) {
   $('logout').hidden = !loggedIn;
 }
 
-async function login(password) {
-  say('Unlocking… (a few seconds)');
+const login = (password) => busy('Unlocking… (a few seconds)', async () => {
+  say('');
   const { salt } = await (await fetch('/api/salt')).json();
   session = await deriveKeys(password, salt);
   await api('/api/files'); // throws on a wrong password
   await db('readwrite', (s) => s.put(session, 'session'));
   show(true);
-  say('');
   await refresh();
-}
+});
 
 async function logout() {
   session = null;
@@ -63,7 +76,7 @@ async function logout() {
   show(false);
 }
 
-async function refresh() {
+const refresh = () => busy('Loading files…', async () => {
   const [list, { used, free }] = await Promise.all(['/api/files', '/api/disk'].map(async (u) => (await api(u)).json()));
   const pct = (n) => `${Math.round((n / (used + free)) * 100)}%`;
   $('disk-meter').value = used / (used + free);
@@ -73,7 +86,7 @@ async function refresh() {
   }));
   files = rows.filter(Boolean);
   render();
-}
+});
 
 // Folders go on the browser history, so the phone's back button goes up a level.
 function go(folder) {
@@ -128,14 +141,18 @@ async function move(f) {
   const to = prompt(`Move "${f.name}" to which folder?\nUse / for subfolders (Photos/2024); leave empty for the top level.`, f.folder);
   if (to === null) return;
   const { id, created, ...meta } = f;
-  await api(`/api/files/${id}`, { method: 'POST', body: await encryptMeta(session.key, id, { ...meta, folder: clean(to) }) });
-  await refresh();
+  await busy(`Moving ${f.name}…`, async () => {
+    await api(`/api/files/${id}`, { method: 'POST', body: await encryptMeta(session.key, id, { ...meta, folder: clean(to) }) });
+    await refresh();
+  });
 }
 
 async function remove(f) {
   if (!confirm(`Delete "${f.name}" for everyone? This can't be undone.`)) return;
-  await api(`/api/files/${f.id}`, { method: 'DELETE' });
-  await refresh();
+  await busy(`Deleting ${f.name}…`, async () => {
+    await api(`/api/files/${f.id}`, { method: 'DELETE' });
+    await refresh();
+  });
 }
 
 // Small JPEG preview made on this device and stored inside the encrypted meta, so the server never sees it.
@@ -168,7 +185,7 @@ async function upload(file, folder) {
     const plain = await file.slice(i * CHUNK, (i + 1) * CHUNK).arrayBuffer();
     const body = await encryptChunk(session.key, prefix, id, i, i === n - 1, plain);
     await api(`/api/files/${id}/${i}`, { method: 'PUT', body });
-    say(`Uploading ${file.name}: ${Math.round(((i + 1) / n) * 100)}%`);
+    $('send-bar').value = (i + 1) / n;
   }
   const meta = await encryptMeta(session.key, id, {
     name: file.name, size: file.size, type: file.type, prefix: b64enc(prefix), thumb: await thumbnail(file), folder,
@@ -178,18 +195,17 @@ async function upload(file, folder) {
 
 // ponytail: decrypted chunks are collected into one Blob, so a file must fit in the browser's memory/blob storage
 // (fine for photos and documents; multi-GB videos on old phones may fail). Streaming to disk would lift that.
-async function decrypt(f) {
+const decrypt = (f) => busy(`Opening ${f.name}…`, async () => {
   const n = chunkCount(f.size);
   const prefix = b64dec(f.prefix);
   const parts = [];
   for (let i = 0; i < n; i++) {
     const ct = await (await api(`/api/files/${f.id}/${i}`)).arrayBuffer();
     parts.push(await decryptChunk(session.key, prefix, f.id, i, i === n - 1, ct));
-    say(`Loading ${f.name}: ${Math.round(((i + 1) / n) * 100)}%`);
+    if (n > 1) setBusy(`Opening ${f.name}: ${Math.round(((i + 1) / n) * 100)}%`);
   }
-  say('');
   return new Blob(parts, { type: f.type || 'application/octet-stream' });
-}
+});
 
 function save(blob, name) {
   const url = URL.createObjectURL(blob);
@@ -223,12 +239,23 @@ $('new-folder').onclick = () => {
 };
 $('pick').onchange = async () => {
   const folder = cwd; // uploads land where they started, even if you browse elsewhere meanwhile
+  const picked = [...$('pick').files];
+  const art = $('send-art');
+  art.setCurrentTime(0);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { art.setCurrentTime(0.8); art.pauseAnimations(); } // still frame: locked file
+  $('sending').showModal();
   try {
-    for (const file of $('pick').files) await upload(file, folder);
+    for (const [i, file] of picked.entries()) {
+      $('send-name').textContent = file.name;
+      $('send-count').textContent = picked.length > 1 ? `(${i + 1} of ${picked.length})` : '';
+      $('send-bar').value = 0;
+      await upload(file, folder);
+    }
     say('Done.');
   } catch (e) {
     say(`Upload failed: ${e.message}`);
   }
+  $('sending').close();
   $('pick').value = '';
   refresh().catch((e) => say(e.message));
 };
