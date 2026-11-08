@@ -1,0 +1,16 @@
+{
+  "name": "family-files",
+  "version": "1.0.0",
+  "description": "End-to-end encrypted family file share for the Raspberry Pi Zero W. No dependencies.",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "author": {
+    "name": "Safi",
+    "email": "saphidev@gmail.com"
+  }
+}

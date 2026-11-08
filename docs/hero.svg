@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" role="img" aria-labelledby="t d">
+  <title id="t">Family Files</title>
+  <desc id="d">A family at home takes photos; each phone encrypts them, sends them over the home Wi-Fi router to a Raspberry Pi Zero W that stores only ciphertext, and the Pi backs the encrypted files up to the cloud every night.</desc>
+  <defs>
+    <clipPath id="frame"><rect width="1200" height="640" rx="28"/></clipPath>
+    <symbol id="lock" viewBox="0 0 24 28">
+      <path d="M6 13V8a6 6 0 0 1 12 0v5" fill="none" stroke="currentColor" stroke-width="3.5"/>
+      <rect x="2.5" y="12" width="19" height="15" rx="3.5" fill="currentColor"/>
+    </symbol>
+    <symbol id="pkt" viewBox="0 0 40 34">
+      <rect x="2" y="2" width="36" height="30" rx="8" fill="#9B8CE0" stroke="#2B2D42" stroke-width="3.5"/>
+      <use href="#lock" x="13" y="7" width="14" height="18" color="#fff"/>
+    </symbol>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#2B2D42"/>
+    </marker>
+    <symbol id="star" viewBox="-10 -10 20 20"><path d="M0-10Q1.5-1.5 10 0Q1.5 1.5 0 10Q-1.5 1.5-10 0Q-1.5-1.5 0-10Z" fill="#FFD166"/></symbol>
+  </defs>
+
+  <g clip-path="url(#frame)" font-family="ui-rounded, 'SF Pro Rounded', Nunito, 'Segoe UI', system-ui, sans-serif" stroke-linejoin="round">
+    <rect width="1200" height="640" fill="#E8F4FF"/>
+    <path d="M0 592Q300 570 600 590T1200 584V640H0Z" fill="#BFE6B0"/>
+
+    <!-- title -->
+    <text x="60" y="74" font-size="54" font-weight="800" fill="#2B2D42">Family Files</text>
+    <text x="62" y="110" font-size="22" fill="#4A4E69">Your family's photos &amp; files, end-to-end encrypted, on a Raspberry Pi Zero W</text>
+
+    <!-- night sky + cloud backup -->
+    <path d="M1150 52a26 26 0 1 0 22 40 21 21 0 1 1-22-40Z" fill="#FFD166" stroke="#2B2D42" stroke-width="4"/>
+    <use href="#star" x="1090" y="58" width="16" height="16"/>
+    <use href="#star" x="1170" y="140" width="12" height="12"/>
+    <use href="#star" x="985" y="175" width="14" height="14"/>
+    <text x="1062" y="134" font-size="20" font-weight="800" fill="#2B2D42" text-anchor="middle">nightly backup</text>
+    <text x="1062" y="158" font-size="16" fill="#4A4E69" text-anchor="middle">still encrypted</text>
+    <g stroke="#2B2D42" stroke-width="10">
+      <circle cx="1010" cy="255" r="40"/><circle cx="1060" cy="225" r="55"/><circle cx="1115" cy="255" r="42"/>
+      <rect x="990" y="250" width="145" height="48" rx="24"/>
+    </g>
+    <g fill="#fff">
+      <circle cx="1010" cy="255" r="40"/><circle cx="1060" cy="225" r="55"/><circle cx="1115" cy="255" r="42"/>
+      <rect x="990" y="250" width="145" height="48" rx="24"/>
+    </g>
+    <use href="#lock" x="1046" y="232" width="30" height="35" color="#8E7DBE"/>
+
+    <!-- house -->
+    <rect x="745" y="165" width="42" height="90" fill="#B56A3B" stroke="#2B2D42" stroke-width="5"/>
+    <rect x="100" y="270" width="800" height="330" rx="6" fill="#FFF7E8" stroke="#2B2D42" stroke-width="5"/>
+    <path d="M70 287L500 130L930 287Z" fill="#E76F51" stroke="#2B2D42" stroke-width="5"/>
+    <text x="500" y="262" font-size="24" font-weight="800" fill="#fff" text-anchor="middle">your home Wi-Fi</text>
+
+    <!-- family -->
+    <g transform="translate(175 592)">
+      <rect x="-26" y="-62" width="20" height="62" rx="9" fill="#3D5A80" stroke="#2B2D42" stroke-width="4"/>
+      <rect x="6" y="-62" width="20" height="62" rx="9" fill="#3D5A80" stroke="#2B2D42" stroke-width="4"/>
+      <rect x="-40" y="-152" width="80" height="100" rx="34" fill="#2A9D8F" stroke="#2B2D42" stroke-width="4"/>
+      <path d="M-30-138Q-42-110-19-100M30-138Q42-110 19-100" fill="none" stroke="#2B2D42" stroke-width="22" stroke-linecap="round"/>
+      <path d="M-30-138Q-42-110-19-100M30-138Q42-110 19-100" fill="none" stroke="#2A9D8F" stroke-width="14" stroke-linecap="round"/>
+      <rect x="-17" y="-134" width="34" height="56" rx="7" fill="#2B2D42"/>
+      <rect x="-12" y="-128" width="24" height="42" rx="3" fill="#8ECAE6"/>
+      <path d="M-12-92L-3-104L4-96L8-100L12-94V-86H-12Z" fill="#52B788"/><circle cx="5" cy="-118" r="3.5" fill="#FFD166"/>
+      <circle cx="-19" cy="-100" r="9" fill="#F2C9A0" stroke="#2B2D42" stroke-width="3"/>
+      <circle cx="19" cy="-100" r="9" fill="#F2C9A0" stroke="#2B2D42" stroke-width="3"/>
+      <circle cy="-187" r="32" fill="#F2C9A0" stroke="#2B2D42" stroke-width="4"/>
+      <path d="M-33-190C-34-228 34-228 33-190C24-206 10-210-4-205C-16-212-28-204-33-190Z" fill="#4A2C2A" stroke="#2B2D42" stroke-width="4"/>
+      <circle cx="-11" cy="-188" r="4" fill="#2B2D42"/><circle cx="11" cy="-188" r="4" fill="#2B2D42"/>
+      <circle cx="-20" cy="-176" r="5" fill="#FF8FA3" opacity=".6"/><circle cx="20" cy="-176" r="5" fill="#FF8FA3" opacity=".6"/>
+      <path d="M-10-175Q0-166 10-175" fill="none" stroke="#2B2D42" stroke-width="3.5" stroke-linecap="round"/>
+    </g>
+
+    <g transform="translate(270 592) scale(.72)">
+      <rect x="-26" y="-62" width="20" height="62" rx="9" fill="#3D5A80" stroke="#2B2D42" stroke-width="5"/>
+      <rect x="6" y="-62" width="20" height="62" rx="9" fill="#3D5A80" stroke="#2B2D42" stroke-width="5"/>
+      <rect x="-40" y="-152" width="80" height="100" rx="34" fill="#F4A261" stroke="#2B2D42" stroke-width="5"/>
+      <path d="M-30-138Q-42-110-19-100M30-138Q42-110 19-100" fill="none" stroke="#2B2D42" stroke-width="24" stroke-linecap="round"/>
+      <path d="M-30-138Q-42-110-19-100M30-138Q42-110 19-100" fill="none" stroke="#F4A261" stroke-width="14" stroke-linecap="round"/>
+      <rect x="-17" y="-134" width="34" height="56" rx="7" fill="#2B2D42"/>
+      <rect x="-12" y="-128" width="24" height="42" rx="3" fill="#8ECAE6"/>
+      <path d="M-12-92L-3-104L4-96L8-100L12-94V-86H-12Z" fill="#52B788"/><circle cx="5" cy="-118" r="3.5" fill="#FFD166"/>
+      <circle cx="-19" cy="-100" r="9" fill="#C68642" stroke="#2B2D42" stroke-width="4"/>
+      <circle cx="19" cy="-100" r="9" fill="#C68642" stroke="#2B2D42" stroke-width="4"/>
+      <circle cy="-187" r="32" fill="#C68642" stroke="#2B2D42" stroke-width="5"/>
+      <path d="M-33-192L-28-216L-16-206L-8-228L2-208L14-226L18-206L30-214L33-192C20-204-20-204-33-192Z" fill="#2B2D42" stroke="#2B2D42" stroke-width="5"/>
+      <circle cx="-11" cy="-188" r="4.5" fill="#2B2D42"/><circle cx="11" cy="-188" r="4.5" fill="#2B2D42"/>
+      <circle cx="-20" cy="-176" r="5" fill="#FF8FA3" opacity=".6"/><circle cx="20" cy="-176" r="5" fill="#FF8FA3" opacity=".6"/>
+      <path d="M-12-176Q0-162 12-176Z" fill="#fff" stroke="#2B2D42" stroke-width="4"/>
+    </g>
+
+    <g transform="translate(365 592)">
+      <path d="M-38-185C-40-232 40-232 38-185L40-136Q20-144 0-144Q-20-144-40-136Z" fill="#A0522D" stroke="#2B2D42" stroke-width="4"/>
+      <rect x="-26" y="-62" width="20" height="62" rx="9" fill="#3D5A80" stroke="#2B2D42" stroke-width="4"/>
+      <rect x="6" y="-62" width="20" height="62" rx="9" fill="#3D5A80" stroke="#2B2D42" stroke-width="4"/>
+      <rect x="-40" y="-152" width="80" height="100" rx="34" fill="#9B5DE5" stroke="#2B2D42" stroke-width="4"/>
+      <path d="M-30-138Q-42-110-19-100M30-138Q42-110 19-100" fill="none" stroke="#2B2D42" stroke-width="22" stroke-linecap="round"/>
+      <path d="M-30-138Q-42-110-19-100M30-138Q42-110 19-100" fill="none" stroke="#9B5DE5" stroke-width="14" stroke-linecap="round"/>
+      <rect x="-17" y="-134" width="34" height="56" rx="7" fill="#2B2D42"/>
+      <rect x="-12" y="-128" width="24" height="42" rx="3" fill="#8ECAE6"/>
+      <path d="M-12-92L-3-104L4-96L8-100L12-94V-86H-12Z" fill="#52B788"/><circle cx="5" cy="-118" r="3.5" fill="#FFD166"/>
+      <circle cx="-19" cy="-100" r="9" fill="#FFDBAC" stroke="#2B2D42" stroke-width="3"/>
+      <circle cx="19" cy="-100" r="9" fill="#FFDBAC" stroke="#2B2D42" stroke-width="3"/>
+      <circle cy="-187" r="32" fill="#FFDBAC" stroke="#2B2D42" stroke-width="4"/>
+      <path d="M-31-194C-26-224 26-224 31-194C14-210-14-210-31-194Z" fill="#A0522D" stroke="#2B2D42" stroke-width="4"/>
+      <circle cx="-11" cy="-188" r="4" fill="#2B2D42"/><circle cx="11" cy="-188" r="4" fill="#2B2D42"/>
+      <circle cx="-20" cy="-176" r="5" fill="#FF8FA3" opacity=".6"/><circle cx="20" cy="-176" r="5" fill="#FF8FA3" opacity=".6"/>
+      <path d="M-10-175Q0-166 10-175" fill="none" stroke="#2B2D42" stroke-width="3.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- photos get locked on the phone -->
+    <g transform="translate(150 330) rotate(-10)">
+      <rect x="-24" y="-28" width="48" height="56" rx="4" fill="#fff" stroke="#2B2D42" stroke-width="4"/>
+      <rect x="-18" y="-22" width="36" height="32" fill="#8ECAE6"/>
+      <path d="M-18 10L-6-6L2 3L8-3L18 8V10Z" fill="#52B788"/><circle cx="8" cy="-13" r="4" fill="#FFD166"/>
+    </g>
+    <g transform="translate(196 322) rotate(9)">
+      <rect x="-24" y="-28" width="48" height="56" rx="4" fill="#fff" stroke="#2B2D42" stroke-width="4"/>
+      <rect x="-18" y="-22" width="36" height="32" fill="#FFCAD4"/>
+      <circle cx="0" cy="-6" r="9" fill="#F2C9A0" stroke="#2B2D42" stroke-width="2"/>
+      <path d="M-14 10Q0-6 14 10Z" fill="#2A9D8F"/>
+    </g>
+    <path d="M226 330L238 335" stroke="#2B2D42" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow)"/>
+    <circle cx="270" cy="338" r="25" fill="#FFD166" stroke="#2B2D42" stroke-width="4"/>
+    <use href="#lock" x="259" y="324" width="22" height="26" color="#2B2D42"/>
+    <text x="270" y="392" font-size="15" font-weight="800" fill="#2B2D42" text-anchor="middle">encrypted on</text>
+    <text x="270" y="410" font-size="15" font-weight="800" fill="#2B2D42" text-anchor="middle">each phone</text>
+
+    <!-- phone -> router -> pi -> cloud -->
+    <g fill="none" stroke="#2B2D42" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 11" marker-end="url(#arrow)">
+      <path d="M297 334C420 310 450 450 474 484"/>
+      <path d="M636 438C670 370 700 360 750 370"/>
+      <path d="M856 505C980 505 1060 440 1060 312"/>
+    </g>
+    <use href="#pkt" x="405" y="372" width="38" height="32"/>
+    <use href="#pkt" x="668" y="358" width="38" height="32"/>
+    <use href="#pkt" x="985" y="440" width="38" height="32"/>
+
+    <!-- router -->
+    <g transform="translate(560 460)">
+      <path d="M-50 0L-62-58M50 0L62-58" stroke="#2B2D42" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="-62" cy="-60" r="7" fill="#2B2D42"/><circle cx="62" cy="-60" r="7" fill="#2B2D42"/>
+      <g fill="none" stroke="#2A9D8F" stroke-width="6" stroke-linecap="round">
+        <path d="M-14-29A20 20 0 0 1 14-29"/><path d="M-25-40A36 36 0 0 1 25-40"/><path d="M-37-52A52 52 0 0 1 37-52"/>
+      </g>
+      <rect x="-80" y="0" width="160" height="56" rx="14" fill="#264653" stroke="#2B2D42" stroke-width="4"/>
+      <circle cx="-52" cy="28" r="5" fill="#80ED99"/><circle cx="-34" cy="28" r="5" fill="#80ED99"/><circle cx="-16" cy="28" r="5" fill="#FFD166"/>
+      <rect x="20" y="22" width="44" height="12" rx="6" fill="#3B6E7D"/>
+      <text y="84" font-size="16" font-weight="800" fill="#2B2D42" text-anchor="middle">router</text>
+    </g>
+
+    <!-- encrypted store -->
+    <g stroke="#2B2D42" stroke-width="4">
+      <rect x="778" y="310" width="56" height="70" rx="8" fill="#D6CCF5"/>
+      <rect x="770" y="318" width="56" height="70" rx="8" fill="#C2B5EE"/>
+      <rect x="762" y="326" width="56" height="70" rx="8" fill="#fff"/>
+    </g>
+    <use href="#lock" x="778" y="336" width="24" height="28" color="#8E7DBE"/>
+    <path d="M772 376h36M772 386h22" stroke="#C2B5EE" stroke-width="4" stroke-linecap="round"/>
+    <text x="790" y="424" font-size="15" font-weight="800" fill="#2B2D42" text-anchor="middle">only ciphertext</text>
+
+    <!-- Raspberry Pi Zero W -->
+    <g transform="translate(680 466)">
+      <rect x="-6" y="26" width="18" height="26" rx="3" fill="#C9CED6" stroke="#2B2D42" stroke-width="3"/>
+      <rect width="170" height="80" rx="10" fill="#2E9E44" stroke="#2B2D42" stroke-width="4"/>
+      <g fill="#FFF7E8" stroke="#E9C46A" stroke-width="3">
+        <circle cx="12" cy="12" r="6"/><circle cx="158" cy="12" r="6"/><circle cx="12" cy="68" r="6"/><circle cx="158" cy="68" r="6"/>
+      </g>
+      <path d="M28 9H142M28 17H142" stroke="#E9C46A" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 6"/>
+      <rect x="58" y="30" width="34" height="32" rx="3" fill="#C9CED6" stroke="#2B2D42" stroke-width="3"/>
+      <rect x="104" y="32" width="22" height="20" rx="2" fill="#C9CED6" stroke="#2B2D42" stroke-width="3"/>
+      <circle cx="146" cy="40" r="4" fill="#80ED99" stroke="#2B2D42" stroke-width="2"/>
+      <rect x="20" y="66" width="28" height="16" rx="3" fill="#C9CED6" stroke="#2B2D42" stroke-width="3"/>
+      <rect x="104" y="68" width="18" height="14" rx="3" fill="#C9CED6" stroke="#2B2D42" stroke-width="3"/>
+      <rect x="130" y="68" width="18" height="14" rx="3" fill="#C9CED6" stroke="#2B2D42" stroke-width="3"/>
+      <text x="85" y="112" font-size="16" font-weight="800" fill="#2B2D42" text-anchor="middle">Raspberry Pi Zero W</text>
+    </g>
+
+    <use href="#star" x="620" y="300" width="14" height="14"/>
+    <path d="M454 330c-6-8-18-2-12 6l12 11 12-11c6-8-6-14-12-6Z" fill="#FF8FA3" stroke="#2B2D42" stroke-width="3"/>
+  </g>
+</svg>

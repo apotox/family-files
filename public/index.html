@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Memories</title>
+<style>
+  :root { --bg:#fafafa; --fg:#222; --muted:#666; --line:#ddd; --accent:#0b57d0; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#181818; --fg:#eee; --muted:#aaa; --line:#333; --accent:#8ab4f8; } }
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 0 auto; padding: 16px; background: var(--bg); color: var(--fg); }
+  header { display: flex; justify-content: space-between; align-items: center; }
+  input[type=password] { width: 100%; box-sizing: border-box; padding: 12px; font-size: 1em; margin: 8px 0; }
+  button { font: inherit; }
+  .primary { padding: 12px; width: 100%; font-size: 1em; }
+  .disk { color: var(--muted); font-size: .9em; margin: 0 0 12px; }
+  .disk meter { display: block; width: 100%; height: 12px; margin-bottom: 4px; }
+  .bar { display: flex; gap: 8px; }
+  .pick { flex: 1; padding: 18px; text-align: center; border: 2px dashed var(--muted); border-radius: 10px; cursor: pointer; font-size: 1.1em; }
+  .pick input { display: none; }
+  #new-folder { padding: 0 14px; border-radius: 10px; }
+  #crumbs { margin: 16px 0 0; overflow-wrap: anywhere; }
+  #crumbs button { background: none; border: 0; padding: 4px 0; color: var(--accent); cursor: pointer; }
+  #crumbs button:disabled { color: var(--fg); font-weight: 600; cursor: default; }
+  #crumbs button:not(:last-child)::after { content: '›'; color: var(--muted); padding: 0 6px; }
+  ul { list-style: none; padding: 0; margin-top: 8px; }
+  li { display: flex; align-items: center; gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  li button { background: none; border: 0; cursor: pointer; }
+  .open { flex: 1; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 0; color: var(--accent); text-align: left; overflow-wrap: anywhere; }
+  .open > span { display: flex; flex-direction: column; min-width: 0; }
+  .thumb { flex: none; width: 56px; height: 56px; border-radius: 6px; object-fit: cover; background: var(--line); color: var(--muted);
+           display: flex; align-items: center; justify-content: center; font-size: .75em; font-weight: 600; }
+  .thumb.folder { font-size: 1.8em; background: none; }
+  .act { flex: none; padding: 8px; color: var(--muted); }
+  small { color: var(--muted); }
+  #preview { max-width: 95vw; max-height: 95vh; padding: 8px; border: 0; border-radius: 10px; background: var(--bg); color: var(--fg); }
+  #preview::backdrop { background: rgb(0 0 0 / .85); }
+  #preview img { display: block; max-width: 100%; max-height: calc(95vh - 72px); margin: 0 auto; object-fit: contain; }
+  #preview form { display: flex; align-items: center; gap: 8px; padding-top: 8px; }
+  #preview-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #preview button { padding: 8px 14px; }
+</style>
+</head>
+<body>
+<header><h1>Memories</h1><button id="logout" type="button" hidden>Log out</button></header>
+
+<form id="login-form" hidden>
+  <label for="password">Family password</label>
+  <input id="password" type="password" autocomplete="current-password" required>
+  <button class="primary" type="submit">Unlock</button>
+</form>
+
+<section id="app" hidden>
+  <p class="disk"><meter id="disk-meter" min="0" max="1" low="0.75" high="0.9" optimum="0"></meter><span id="disk"></span></p>
+  <div class="bar">
+    <label class="pick">Tap to upload files<input type="file" multiple id="pick"></label>
+    <button id="new-folder" type="button">New folder</button>
+  </div>
+  <nav id="crumbs" aria-label="Folder"></nav>
+  <ul id="list"></ul>
+</section>
+
+<dialog id="preview" closedby="any">
+  <img id="preview-img" alt="">
+  <form method="dialog">
+    <span id="preview-name"></span>
+    <button id="preview-dl" type="button">Download</button>
+    <button>Close</button>
+  </form>
+</dialog>
+
+<p id="msg" role="status"></p>
+<script type="module" src="/app.mjs"></script>
+</body>
+</html>
