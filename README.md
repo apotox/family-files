@@ -10,6 +10,8 @@ Everything is **end-to-end encrypted**: each phone or laptop encrypts files *bef
 - **No dependencies**: Node.js standard library on the Pi, Web Crypto in the browser. There is no `npm install`.
 - **Features**: photo thumbnails and previews, folders, a disk usage bar, and an optional nightly backup to Google Drive (ciphertext only).
 
+> **Using an AI coding agent?** This repo ships a setup skill at [`.claude/skills/pi-setup`](.claude/skills/pi-setup/SKILL.md). Clone the repo, open it in Claude Code (or another agent that reads `SKILL.md` skills), and say *"set up Family Files on my Pi"*. The agent runs the commands over SSH and tells you whenever it needs your hands: flashing the card, router settings, typing passwords. It also includes one-time boot scripts that diagnose or fix a Pi that won't get online.
+
 ---
 
 ## 1. What to buy
@@ -57,7 +59,7 @@ If `familyfiles.local` doesn't resolve, look up the Pi's IP address in your rout
 
 ```sh
 sudo apt install -y nodejs git          # Node.js 20 from Raspberry Pi OS; works on the Zero W's ARMv6 CPU
-git clone https://github.com/safidevde/family-files.git ~/family-files
+git clone https://github.com/apotox/family-files.git ~/family-files
 cd ~/family-files
 npm test                                # self-check, takes about 40 s on a Zero W, prints "ok"
 ```
