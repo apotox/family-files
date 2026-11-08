@@ -157,7 +157,61 @@ Open **https://files.example.com** on any device on your Wi-Fi, enter the family
 
 **To restore** onto a fresh Pi, run `rclone copy gdrive:FamilyFilesBackup/current ~/family-files/data`, then log in with the same family password.
 
+## 8. Lock it down (recommended)
+
+The Pi holds your family's data and runs all day, so close the doors the setup left open.
+
+**Automatic security updates.** Raspberry Pi OS ships its fixes in its own archives, which the default `unattended-upgrades` rules don't cover. Without the extra file below, it installs nothing.
+
+```sh
+sudo apt install -y unattended-upgrades
+sudo tee /etc/apt/apt.conf.d/52unattended-upgrades-raspbian > /dev/null <<'EOF'
+Unattended-Upgrade::Origins-Pattern {
+  "origin=Raspbian,codename=${distro_codename},label=Raspbian";
+  "origin=Raspberry Pi Foundation,codename=${distro_codename},label=Raspberry Pi Foundation";
+};
+EOF
+printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' | sudo tee /etc/apt/apt.conf.d/20auto-upgrades > /dev/null
+sudo unattended-upgrade --dry-run --debug 2>&1 | grep "Allowed origins"    # must mention Raspbian
+```
+
+**SSH with keys only.** Keep your current session open and test a fresh `ssh` login from a second terminal before closing it.
+
+```sh
+printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin no\n' \
+  | sudo tee /etc/ssh/sshd_config.d/01-keys-only.conf > /dev/null
+sudo sshd -t && sudo systemctl reload ssh
+```
+
+**Remove the Wi-Fi password copies left by the first-boot setup.**
+- Imager's settings stay on the boot partition in plain text: anyone holding the card can read them.
+- cloud-init, the first-boot tool, also copies them into its log.
+- Once the Pi is online, cloud-init has done its job. Turn it off and clean up:
+
+```sh
+sudo touch /etc/cloud/cloud-init.disabled
+sudo cloud-init clean                                   # its saved copy of the setup data
+sudo rm -f /boot/firmware/network-config
+sudo rm -rf /boot/firmware/.Spotlight-V100 /boot/firmware/.fseventsd   # search index a Mac writes onto the card
+read -rsp "Wi-Fi password: " P; echo
+sudo env P="$P" perl -pi -e 's/\Q$ENV{P}\E/[REDACTED]/g' /var/log/cloud-init.log; unset P
+```
+
+**Bluetooth off.** It isn't used, and turning it off is one less radio listening.
+
+```sh
+sudo systemctl disable --now bluetooth
+echo 'dtoverlay=disable-bt' | sudo tee -a /boot/firmware/config.txt
+sudo reboot
+```
+
+**Keep the Cloudflare token's reach small.** The token on the Pi can edit every DNS record in its zone. If you host other things on that domain, issue the certificate through a spare domain with acme.sh's [DNS alias mode](https://github.com/acmesh-official/acme.sh/wiki/DNS-alias-mode) (`--challenge-alias`), so the Pi only holds a token for the spare domain.
+
+**Never forward a port to the Pi on your router.** Family Files is meant for your home network only.
+
 ## Updating
+
+The operating system updates itself (step 8). To update the app:
 
 ```sh
 cd ~/family-files && git pull && sudo systemctl restart family-files
@@ -173,6 +227,7 @@ cd ~/family-files && git pull && sudo systemctl restart family-files
 | Page says "must be opened over https" | You opened it via the IP address or `http://`. Use the `https://files.example.com` name. |
 | `files.example.com` doesn't resolve at home | Your router's DNS rebind protection blocks it; add the exception (step 5.3). |
 | "Wrong password" | Passwords are case-sensitive and are checked exactly. There is no reset: the password *is* the key. |
+| "Too many wrong passwords" | After 5 wrong passwords in a row, that device must wait (1 s, then 2, 4, … up to 15 min). Wait it out; `sudo systemctl restart family-files` clears all lockouts. |
 
 ---
 
@@ -190,13 +245,14 @@ password ──PBKDF2-SHA256 (600k, per-install salt)──► master ──HKDF
   - As a result, reordering, swapping chunks between files, or truncating a file all fail to decrypt.
 - **What else is encrypted:** the name, type, size, folder and thumbnail, stored together as one encrypted metadata blob per file.
 - **Where the key lives:** after login it is kept in IndexedDB as a *non-extractable* `CryptoKey`. Not even scripts on the page can read the raw key.
+- **Slowing down guessing:** from the 5th wrong password in a row, a device is locked out for 1 s, then 2 s, 4 s and so on, up to 15 minutes, even for the right password. A successful login resets the count.
 
 ### What this does not protect against
 
 - **Someone who takes control of the running Pi can change the web page it serves** and capture the password at the next login. This applies to any web app that encrypts in the browser. The encryption protects stored data (a stolen card, the backup), not a live, compromised server. Keep the Pi updated and don't expose it to the internet.
 - **The Pi still sees some information:** how many files there are, their approximate sizes, upload times and which device uploaded.
 - **Everyone shares one password and has the same rights.** Anyone in the family can delete anything (deleted files stay in the backup).
-- **Password strength is the whole defence if the stored data leaks**, because an attacker can guess passwords offline. Use a long passphrase.
+- **Password strength is the whole defence if the stored data leaks.** The lockout only slows guessing against the running Pi. Someone holding a copy of the data (a stolen card, the backup) can guess offline at full speed. Use a long passphrase.
 
 ## Configuration
 

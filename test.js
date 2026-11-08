@@ -85,6 +85,14 @@ const { server, setPassword, CHUNK, TAG } = require('./server');
     assert.equal((await req(`/api/files/${id}/0`)).status, 404, 'deleted file cannot be downloaded');
     assert.deepEqual(fs.readdirSync(path.join(dir, 'files')), [], 'nothing left on disk');
     assert.equal((await req(`/api/files/${id}`, { method: 'DELETE' })).status, 404, 'second delete is 404');
+
+    // password guessing is throttled; last, because it locks this address out
+    const statuses = [];
+    for (let i = 0; i < 6; i++) statuses.push((await req('/api/files', {}, wrong.token)).status);
+    assert.deepEqual(statuses, [401, 401, 401, 401, 401, 429], 'locked out after 5 wrong passwords');
+    assert.equal((await req('/api/files')).status, 429, 'even the right password waits out the lockout');
+    await new Promise((r) => setTimeout(r, 1100));
+    assert.equal((await req('/api/files')).status, 200, 'right password works after the wait');
     console.log('ok');
   } finally {
     server.close();

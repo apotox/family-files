@@ -174,6 +174,66 @@ ssh pi 'sudo apt install -y rclone'
    ```
    The byte count on Drive should match `data/`, apart from `.part` and `.tmp` files.
 
+## 10. Harden (always do this)
+
+Run these in order. Each block can be sent with `ssh pi 'sh -s' <<'EOF' … EOF`.
+
+1. **Automatic updates.**
+   - The default rules only allow Debian origins. Raspberry Pi OS updates come from `o=Raspbian` and `o=Raspberry Pi Foundation`, so without the extra file below it upgrades nothing.
+   - Check the origins first: `apt-cache policy | grep -oE "o=[^,]+,a=[^,]+,n=[^,]+,l=[^,]+" | sort -u`.
+   ```sh
+   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y unattended-upgrades
+   sudo tee /etc/apt/apt.conf.d/52unattended-upgrades-raspbian > /dev/null <<'C'
+   Unattended-Upgrade::Origins-Pattern {
+     "origin=Raspbian,codename=${distro_codename},label=Raspbian";
+     "origin=Raspberry Pi Foundation,codename=${distro_codename},label=Raspberry Pi Foundation";
+   };
+   C
+   printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' | sudo tee /etc/apt/apt.conf.d/20auto-upgrades > /dev/null
+   sudo unattended-upgrade --dry-run --debug 2>&1 | grep "Allowed origins"   # must include Raspbian
+   systemctl is-enabled apt-daily.timer apt-daily-upgrade.timer
+   ```
+2. **SSH with keys only.** A mistake here locks you out, and the only way back is the SD card. So first open a fallback master connection.
+   - Keep the socket path short: a unix socket path must stay under 104 bytes, and long scratch paths fail.
+   - The drop-in is named `01-` because sshd takes the *first* value it reads, and Imager/cloud-init leave a `50-cloud-init.conf` that may say `PasswordAuthentication yes`.
+   ```sh
+   ssh -o ControlMaster=yes -o ControlPath=~/.ssh/pi-safety.sock -o ControlPersist=600 -fN pi
+   ssh -o ControlPath=~/.ssh/pi-safety.sock pi 'printf "PasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin no\n" \
+     | sudo tee /etc/ssh/sshd_config.d/01-keys-only.conf > /dev/null && sudo sshd -t && sudo systemctl reload ssh'
+   ssh -o ControlPath=none -o BatchMode=yes pi true && echo key-login-ok        # MUST pass
+   ssh -o ControlPath=none -o PubkeyAuthentication=no -o BatchMode=yes pi true  # expect "Permission denied (publickey)"
+   ssh -o ControlPath=~/.ssh/pi-safety.sock -O exit pi
+   ```
+   If the key login fails, remove the drop-in through the fallback socket and reload sshd before doing anything else.
+3. **Remove the copies of the Wi-Fi password.** It sits in plain text in:
+   - `/boot/firmware/network-config`
+   - `/var/log/cloud-init.log`
+   - `/var/lib/cloud/instances/*`
+   - macOS Spotlight files on the boot partition, if the card was ever mounted on a Mac
+
+   No human input is needed: read the password from the NetworkManager profile into a private temp file and match against that file.
+   - **Gotcha:** `sudo grep -f <(…)` silently matches nothing, because sudo closes the inherited descriptor. Use a real file.
+   ```sh
+   umask 077; T=$(mktemp)
+   CON=$(nmcli -g NAME,TYPE con show | awk -F: '$2=="802-11-wireless"{print $1; exit}')
+   sudo nmcli -s -g 802-11-wireless-security.psk con show "$CON" > "$T"
+   sudo touch /etc/cloud/cloud-init.disabled && sudo cloud-init clean
+   sudo rm -rf /boot/firmware/network-config /boot/firmware/.Spotlight-V100 /boot/firmware/.fseventsd
+   sudo env T="$T" perl -pi -e 'BEGIN { open my $f, "<", $ENV{T} or die; chomp($p = <$f>) } s/\Q$p\E/[REDACTED]/g' /var/log/cloud-init.log
+   sudo grep -rlFf "$T" /boot/firmware /var/log /var/lib /etc /run /home 2>/dev/null   # only the .nmconnection may remain
+   rm -f "$T"; nmcli -g NAME,STATE con show --active                                  # Wi-Fi must still be activated
+   ```
+4. **Bluetooth off.**
+   ```sh
+   sudo systemctl disable --now bluetooth.service
+   grep -q '^dtoverlay=disable-bt' /boot/firmware/config.txt || echo 'dtoverlay=disable-bt' | sudo tee -a /boot/firmware/config.txt
+   ```
+   The overlay takes effect after a reboot, so ask before rebooting. `hciuart.service` doesn't exist on the Zero W image; ignore that error.
+5. **Shrink the Cloudflare token's reach.** A zone token on the Pi can rewrite every record on that domain. If the user hosts anything else there, propose acme.sh DNS alias mode (`--challenge-alias <spare-domain>`) so the Pi only holds a token for a spare zone.
+6. **Tell the user** never to forward a router port to the Pi.
+
+The app itself locks out an IP address after 5 wrong tokens in a row (1 s, doubling, up to 15 min; it answers 429). Restarting the service clears all lockouts.
+
 ## Done when
 
 - [ ] `ssh pi vcgencmd get_throttled` prints `0x0`.
@@ -182,6 +242,11 @@ ssh pi 'sudo apt install -y rclone'
 - [ ] The HTTPS URL returns 200 from another device. The user has logged in, uploaded a file, and seen it listed.
 - [ ] `crontab -l` has the acme.sh renewal (and the backup, if chosen).
 - [ ] The backup has run once, and the sizes match.
+- [ ] Hardening is done:
+  - The `unattended-upgrade` dry run lists the Raspbian origins.
+  - `sudo sshd -T` shows `passwordauthentication no`.
+  - Searching the system for the Wi-Fi password finds only the `.nmconnection` file.
+  - `bluetooth.service` is disabled.
 - [ ] The user knows the family password can't be recovered, and that `git pull && sudo systemctl restart family-files` updates the app.
 
 ## Troubleshooting
@@ -195,6 +260,7 @@ ssh pi 'sudo apt install -y rclone'
 | ping works but your tools get "No route to host" (macOS) | Local Network permission for the editor or terminal app. |
 | The page says "must be opened over https" | The user opened it via the IP address or `http://`. Use the HTTPS name. |
 | The name doesn't resolve at home | Router DNS rebind protection (step 7.3). |
+| "Too many wrong passwords" (HTTP 429) | The per-IP lockout. Wait it out, or `sudo systemctl restart family-files` to clear it. Don't leave scripted logins with a bad token running. |
 | "Wrong password" for everyone | Check the stored config with `ssh pi cat ~/family-files/data/config.json`; it must hold a salt and a verifier, never the password. Passwords are case-sensitive. |
 
 ### One-time boot scripts (when SSH is impossible)

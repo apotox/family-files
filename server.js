@@ -44,6 +44,21 @@ function authorized(req, config) {
 
 const fail = (status, message) => Object.assign(new Error(message), { status });
 
+// Slows password guessing: from the 5th wrong token in a row, an address is locked out for 1 s, then 2, 4, ... up to
+// 15 min, even for the right password. A right one before then resets the count.
+// ponytail: in-memory per-IP map, fine for a home LAN; it resets on restart and never shrinks.
+const failures = new Map(); // ip -> { count, until }
+function throttle(ip) {
+  const wait = (failures.get(ip)?.until ?? 0) - Date.now();
+  if (wait > 0) throw fail(429, `Too many wrong passwords. Try again in ${Math.ceil(wait / 1000)} s.`);
+}
+function recordFailure(ip) {
+  const f = failures.get(ip) ?? { count: 0, until: 0 };
+  f.count += 1;
+  if (f.count >= 5) f.until = Date.now() + Math.min(15 * 60e3, 1000 * 2 ** (f.count - 5));
+  failures.set(ip, f);
+}
+
 function readBody(req, limit) {
   return new Promise((resolve, reject) => {
     const parts = [];
@@ -153,7 +168,10 @@ async function handle(req, res) {
   const config = readConfig();
   if (!config) throw fail(503, 'no password set: run `node server.js set-password`');
   if (req.method === 'GET' && pathname === '/api/salt') return json(res, 200, { salt: config.salt });
-  if (!authorized(req, config)) throw fail(401, 'wrong password');
+  const ip = req.socket.remoteAddress;
+  throttle(ip);
+  if (!authorized(req, config)) { recordFailure(ip); throw fail(401, 'wrong password'); }
+  failures.delete(ip);
 
   if (req.method === 'GET' && pathname === '/api/files') return json(res, 200, listFiles());
   if (req.method === 'GET' && pathname === '/api/disk') return json(res, 200, disk());
