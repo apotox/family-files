@@ -1,5 +1,5 @@
 import { deriveKeys, chunkCount, CHUNK, encryptChunk, decryptChunk, encryptMeta, decryptMeta, b64enc, b64dec } from './crypto.mjs';
-import { clean, fmt, view, where } from './view.mjs';
+import { clean, fmt, folders, view, where } from './view.mjs';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, props) => Object.assign(document.createElement(tag), props);
@@ -134,9 +134,25 @@ function render() {
   if (session && !rows.length) $('list').textContent = emptyText(query);
 }
 
+// Tap an existing folder, or type a new one (the datalist suggests as you type).
+// Each choice is a submit button whose value becomes the dialog's returnValue; closing without one leaves it '\0'.
+function pickFolder(f) {
+  const d = $('mover');
+  const paths = folders(files);
+  $('mover-name').textContent = f.name;
+  $('mover-new').value = '';
+  $('mover-paths').replaceChildren(...paths.map((p) => el('option', { value: p })));
+  $('mover-list').replaceChildren(...paths.map((p) =>
+    el('button', { value: p, formNoValidate: true, textContent: p ? `📁 ${p}` : '📁 All files (top level)', disabled: p === f.folder })));
+  $('mover-go').onclick = () => { $('mover-go').value = $('mover-new').value; };
+  d.returnValue = '\0';
+  d.showModal();
+  return new Promise((resolve) => { d.onclose = () => resolve(d.returnValue === '\0' ? null : d.returnValue); });
+}
+
 async function move(f) {
-  const to = prompt(`Move "${f.name}" to which folder?\nUse / for subfolders (Photos/2024); leave empty for the top level.`, f.folder);
-  if (to === null) return;
+  const to = await pickFolder(f);
+  if (to === null || clean(to) === f.folder) return;
   const { id, created, ...meta } = f;
   await busy(`Moving ${f.name}…`, async () => {
     await api(`/api/files/${id}`, { method: 'POST', body: await encryptMeta(session.key, id, { ...meta, folder: clean(to) }) });
@@ -240,6 +256,7 @@ function setBackground(name) {
   try { localStorage.setItem('background', name); } catch {}
 }
 try { setBackground(localStorage.getItem('background') ?? 'none'); } catch {}
+$('mover-cancel').onclick = () => $('mover').close();
 $('wallpaper').onclick = () => $('walls').showModal();
 $('walls-form').onchange = (e) => setBackground(e.target.value);
 $('new-folder').onclick = () => {

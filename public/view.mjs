@@ -44,3 +44,13 @@ export function view(files, cwd, query) {
   const words = fold(query).split(/\s+/).filter(Boolean);
   return words.length ? search(files, cwd, words) : browse(files, cwd);
 }
+
+// Every folder path that exists, parents included, sorted: '' (the top level) comes first.
+export function folders(files) {
+  const all = new Set(['']);
+  for (const { folder } of files) {
+    const parts = folder.split('/');
+    parts.forEach((_, i) => all.add(parts.slice(0, i + 1).join('/')));
+  }
+  return [...all].sort((a, b) => a.localeCompare(b));
+}

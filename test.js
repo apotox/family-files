@@ -44,6 +44,8 @@ async function checkView() {
   for (const [bytes, text] of [[0, '0 B'], [1023, '1023 B'], [1024, '1.0 KB'], [1.5 * 2 ** 20, '1.5 MB'], [2 ** 40, '1024.0 GB']]) {
     assert.equal(v.fmt(bytes), text);
   }
+  assert.deepEqual(v.folders(files), ['', 'Photos', 'Photos/2024', 'Photos/2024/Xmas', 'Photosx', 'Schule'], 'folders: parents included, sorted');
+  assert.deepEqual(v.folders([]), [''], 'folders: top level always there');
   for (const [path, expected] of [['', ''], [' / a // b / ', 'a/b'], ['Photos/2024', 'Photos/2024']]) assert.equal(v.clean(path), expected);
 }
 
